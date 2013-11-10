@@ -36,28 +36,165 @@ public class Assignment1 {
 		
 		
 	}
-	public void bas(){
-		int curJob = 0;
+	public void mp(){
+		int uTime = 0;
+		int curJob = 1;
 		int time=0;
+		int burst;
+		int inputbuffer = 0;
+		int dataOnDisk=0;
+		int codeLoaded=0, dataInMem=0;
 		do{
 			if(!jobs.get(curJob).dataOnDisk){
 				for(int i=0; i<CODESIZE/ttds; i++){
 					logger(TTDCODE, jobs.get(curJob).jobName, time);
 					time+=ttdt;
+					jobs.get(codeLoaded).dataOnDisk = true;
+					codeLoaded++;
+					
 				}
+				logger(CODEONDISK, jobs.get(curJob).jobName, time);
+			}
+			
+			if(!jobs.get(curJob).dataInMem){
 				for(int i=0; i<CODESIZE/dtms; i++){
 					logger(DTMCODE, jobs.get(curJob).jobName, time);
 					time+=dtmt;
 				}
+				logger(CODEINMEM, jobs.get(curJob).jobName, time);
+			}
+			dataInMem++;
+			logger(JOBSTART, jobs.get(curJob).jobName, time);
+			for(int i=0;i<jobs.get(curJob).todo.size(); i+=2){
+				burst = Integer.parseInt(jobs.get(curJob).todo.get(i));
+				int timeAB = time+burst;
+				uTime+=burst;
+				boolean needData=false;
+				if(i<(jobs.get(curJob).todo.size()-1)){
+					needData=true;
+				}
+				inputbuffer=0;
+				while(burst>0){
+					if(dataOnDisk==0 && burst>ttdt && needData){
+						logger(TTDDATA, jobs.get(curJob).jobName, time);
+						time+=ttdt;
+						burst-=ttdt;
+						dataOnDisk+=ttds;
+						logger(DATAONDISK, jobs.get(curJob).jobName, time);
+					// If we still have data on disk to transfer into memory
+					}else if(dataOnDisk>0 && inputbuffer+dtms<=inBufferSize && burst>dtmt && needData){
+						logger(NEEDDATA, jobs.get(curJob).jobName, time);
+						logger(DTMDATA, jobs.get(curJob).jobName, time);
+						time+=dtmt;
+						burst-=dtmt;
+						inputbuffer+=dtms;
+						logger(DATAINMEM, jobs.get(curJob).jobName, time);
+						if(inputbuffer>=inBufferSize){
+							logger(INPUTBUFFERFULL, jobs.get(curJob).jobName, time);
+						}
+					}else if(codeLoaded<jobs.size() && !jobs.get(codeLoaded).dataOnDisk && burst > ((CODESIZE/ttds)*ttdt)){
+						for(int k=0;k<CODESIZE/ttds;k++){
+							logger(TTDCODE, jobs.get(codeLoaded).jobName, time);
+							time+=ttdt;
+							burst-=ttdt;
+						}
+						logger(CODEONDISK, jobs.get(codeLoaded).jobName, time);
+						jobs.get(codeLoaded).dataOnDisk=true;
+						codeLoaded++;
+					}else if(dataInMem<jobs.size() && jobs.get(dataInMem).dataOnDisk && burst > ((CODESIZE/dtms)*dtmt)){
+						for(int k=0; k<CODESIZE/ttds;k++){
+							logger(DTMCODE, jobs.get(dataInMem).jobName, time);
+							time+=dtmt;
+							burst-=dtmt;
+						}
+						logger(CODEINMEM, jobs.get(dataInMem).jobName, time);
+						jobs.get(dataInMem).dataInMem=true;
+						dataInMem++;
+					}else{
+						break;
+					}
+				}
+				time = timeAB;
+				if(i+2<jobs.get(curJob).todo.size())logger(JOBCONT, jobs.get(curJob).jobName, time);
+
+			}
+		logger(JOBDONE, jobs.get(curJob).jobName, time);
+		curJob++;
+		}while(curJob<jobs.size());
+		System.out.printf("\n\nTotal time:\t\t%d\nUser time:\t\t%d\nSystem time:\t\t%d\n", time, uTime, time-uTime);
+	}
+		
+	
+	public void bas(){
+		int uTime = 0;
+		int curJob = 1;
+		int time=0;
+		int burst;
+		int inputbuffer = 0;
+		int dataOnDisk=0;
+		int codeLoaded=0;
+		do{
+			if(!jobs.get(curJob).dataOnDisk){
+				for(int i=0; i<CODESIZE/ttds; i++){
+					logger(TTDCODE, jobs.get(curJob).jobName, time);
+					time+=ttdt;
+					jobs.get(codeLoaded).dataOnDisk = true;
+					codeLoaded++;
+					
+				}
+			}
+			for(int i=0; i<CODESIZE/dtms; i++){
+				logger(DTMCODE, jobs.get(curJob).jobName, time);
+				time+=dtmt;
 			}
 			logger(JOBSTART, jobs.get(curJob).jobName, time);
 			for(int i=0;i<jobs.get(curJob).todo.size(); i+=2){
-				
+				burst = Integer.parseInt(jobs.get(curJob).todo.get(i));
+				int timeAB = time+burst;
+				uTime+=burst;
+				boolean needData=false;
+				if(i<(jobs.get(curJob).todo.size()-1)){
+					needData=true;
+				}
+				inputbuffer=0;
+				while(burst>0){
+					if(dataOnDisk==0 && burst>ttdt && needData){
+						logger(TTDDATA, jobs.get(curJob).jobName, time);
+						time+=ttdt;
+						burst-=ttdt;
+						dataOnDisk+=ttds;
+					// If we still have data on disk to transfer into memory
+					}else if(dataOnDisk>0 && inputbuffer<=(inBufferSize+dtms) && burst>dtmt && needData){
+						logger(DTMDATA, jobs.get(curJob).jobName, time);
+						time+=dtmt;
+						burst-=dtmt;
+						inputbuffer+=dtms;
+						if(inputbuffer>=inBufferSize){
+							logger(INPUTBUFFERFULL, jobs.get(curJob).jobName, time);
+							break;
+						}
+					}else if(codeLoaded<jobs.size() && !jobs.get(codeLoaded).dataOnDisk && burst > (CODESIZE/ttds*ttdt)){
+						for(int k=0;k<CODESIZE/ttds;k++){
+							logger(TTDCODE, jobs.get(codeLoaded).jobName, time);
+							time+=ttdt;
+							burst-=ttdt;
+						}
+						jobs.get(codeLoaded).dataOnDisk=true;
+						codeLoaded++;
+					}else{
+						break;
+					}
+				}
+				time = timeAB;
+				if(i+2<jobs.get(curJob).todo.size())logger(JOBCONT, jobs.get(curJob).jobName, time);
+
 			}
+		logger(JOBDONE, jobs.get(curJob).jobName, time);
 		curJob++;
 		}while(curJob<jobs.size());
+		System.out.printf("\n\nTotal time:\t\t%d\nUser time:\t\t%d\nSystem time:\t\t%d\n", time, uTime, time-uTime);
 	}
-	
+
 	public void bns(){
 		int uTime=0;
 		int burst;
@@ -89,7 +226,7 @@ public class Assignment1 {
 						burst-=ttdt;
 						dataOnDisk+=ttds;
 					// If we still have data on disk to transfer into memory
-					}else if(dataOnDisk>0 && inputbuffer<=(inBufferSize+dtms) && burst>dtmt && needData){
+					}else if(dataOnDisk>0 && inputbuffer+dtms<=inBufferSize && burst>dtmt && needData){
 						logger(DTMDATA, jobs.get(curJob).jobName, time);
 						time+=dtmt;
 						burst-=dtmt;
@@ -161,16 +298,16 @@ public class Assignment1 {
 		System.out.printf("\n\nTotal time:\t\t%d\nUser time:\t\t%d\nSystem time:\t\t%d\n", time, uTime, time-uTime);
 	}
 	private final int JOBSTART=0, TTDCODE=1, DTMCODE=2, NEEDDATA=3, DTMDATA=4, TTDDATA=5, JOBDONE=6, JOBCONT=7,
-					  INPUTBUFFERFULL=8; 
+					  INPUTBUFFERFULL=8, CODEONDISK=9, CODEINMEM=10, DATAONDISK=11, DATAINMEM=12;
 	public void logger(int logNum, String job, int time){
 		switch(logNum){
-		case JOBSTART: System.out.printf("\nStart executing job %s\t\t\t\t%d\n", job, time);
+		case JOBSTART: System.out.printf("\nStart executing job %s\t\t\t\t%d\n\n", job, time);
 				break;
 		case TTDCODE: System.out.printf("Tape to disk code for job %s\t\t\t%d\n", job, time);
 				break;
 		case DTMCODE: System.out.printf("Disk to memory code for job %s\t\t\t%d\n", job, time);
 				break;
-		case NEEDDATA: System.out.printf("\nNeed data for job %s\t\t\t\t%d\n\n", job, time);
+		case NEEDDATA: System.out.printf("Need data for job %s\t\t\t\t%d\n", job, time);
 				break;
 		case DTMDATA: System.out.printf("Disk to memory data for job %s\t\t\t%d\n", job, time);
 				break;
@@ -182,6 +319,13 @@ public class Assignment1 {
 				break;
 		case INPUTBUFFERFULL: System.out.printf("Input buffer full for job %s\t\t\t%d\n", job, time);
 				break;
+		case CODEONDISK: System.out.printf("Code for job %s on disk\t\t\t%d\n", job, time);
+				break;
+		case CODEINMEM: System.out.printf("Code for job %s in memory\t\t\t%d\n", job, time);
+				break;
+		case DATAONDISK: System.out.printf("Data for job %s on disk\t\t\t%d\n", job, time);
+				break;
+		case DATAINMEM: System.out.printf("Data for job %s in memory\t\t\t%d\n", job, time);
 		}
 	}
 }
