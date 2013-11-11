@@ -14,7 +14,7 @@ public class Assignment1 {
 	int inputbuffer=0;
 	public Assignment1() throws FileNotFoundException{
 		jobs = new LinkedList<Job>();
-		File file = new File("jobs1.dat");
+		File file = new File("jobs.dat");
 		Scanner s = new Scanner(file);
 		ttds = s.nextInt();
 		ttdt = s.nextInt();
